@@ -1,4 +1,6 @@
 defmodule Sofa.Cushion do
+  require Logger
+
   @moduledoc """
   Internal Helpers for Sofa, with a vanity naming convention.
 
@@ -21,53 +23,55 @@ defmodule Sofa.Cushion do
   Etag : "4-322add00c33cab838bf9d7909f18d4f5"
 
   """
-  @spec untaint_headers(Tesla.Env.headers()) :: map()
-  def untaint_headers(h) when is_list(h) do
-    untaint_headers(h, %{})
+  @spec untaint_headers(map()) :: map()
+  def untaint_headers(h) when is_map(h) do
+    Enum.reduce(h, %{}, fn x, acc ->
+      {k, v} = untaint_header(x)
+      Map.put(acc, k, v)
+    end)
   end
 
-  @spec untaint_headers(Tesla.Env.headers(), map()) :: map()
-  defp untaint_headers([], map), do: map
-
-  defp untaint_headers([{"etag", v} | t], m) do
-    untaint_headers(t, Map.put(m, :etag, String.trim(v, ~s("))))
+  defp untaint_header({"etag", [v]}) do
+    {:etag, String.trim(v, ~s("))}
   end
 
-  defp untaint_headers([{"cache-control", v} | t], m) do
-    untaint_headers(t, Map.put(m, :cache_control, String.downcase(v)))
+  defp untaint_header({"cache-control", [v]}) do
+    {:cache_control, String.downcase(v)}
   end
 
-  defp untaint_headers([{"server", v} | t], m) do
-    untaint_headers(t, Map.put(m, :server, v))
+  defp untaint_header({"server", [v]}) do
+    {:server, String.downcase(v)}
   end
 
-  defp untaint_headers([{"x-couch-request-id", v} | t], m) do
-    untaint_headers(t, Map.put(m, :couch_request_id, String.downcase(v)))
+  defp untaint_header({"x-couch-request-id", [v]}) do
+    {:couch_request_id, v}
   end
 
-  defp untaint_headers([{"date", v} | t], m) do
-    untaint_headers(t, Map.put(m, :date, v))
+  defp untaint_header({"date", [v]}) do
+    {:date, v}
   end
 
-  defp untaint_headers([{"content-type", v} | t], m) do
-    untaint_headers(t, Map.put(m, :content_type, String.downcase(v)))
+  defp untaint_header({"location", [v]}) do
+    {:location, v}
   end
 
-  defp untaint_headers([{"content-length", v} | t], m) do
-    untaint_headers(t, Map.put(m, :content_length, String.to_integer(v)))
+  defp untaint_header({"content-type", [v]}) do
+    {:content_type, String.downcase(v)}
   end
 
-  defp untaint_headers([{"x-couchdb-body-time", v} | t], m) do
-    untaint_headers(t, Map.put(m, :couch_body_time, String.to_integer(v)))
+  defp untaint_header({"content-length", [v]}) do
+    {:content_length, String.to_integer(v)}
   end
 
-  # try just this header in lower-case; otherwise dump it
-  defp untaint_headers([{k, v} | t], m) do
-    m = untaint_headers(t, m)
+  defp untaint_header({"x-couchdb-body-time", [v]}) do
+    {:couchdb_body_time, String.to_integer(v)}
+  end
 
-    case String.downcase(k) do
-      ^k -> untaint_headers(t, m)
-      l -> untaint_headers([{l, v}], m)
-    end
+  defp untaint_header({"connection", [v]}) do
+    {:connection, String.downcase(v)}
+  end
+
+  defp untaint_header({k, [v]}) do
+    {String.downcase(k), v}
   end
 end

@@ -9,7 +9,7 @@ defmodule Sofa.MixProject do
       version: tag,
       id: version,
       description: "Sofa " <> version,
-      elixir: "~> 1.10",
+      elixir: ">= 1.16.0",
       start_permanent: Mix.env() == :prod,
       # http://erlang.org/doc/man/dialyzer.html
       dialyzer: [
@@ -31,27 +31,27 @@ defmodule Sofa.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:idna, "~> 6.1", optional: true},
-      {:credo, "~> 1.3", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:gun, "~> 2.0.0-rc.1", override: true, optional: true},
-      {:jason, "~> 1.2"},
+      {:idna, ">= 6.1.0", optional: true},
+      {:credo, ">= 1.3.0", only: [:dev, :test], runtime: false},
+      {:dialyxir, ">= 1.1.0", only: :dev, runtime: false},
+      {:req, ">= 0.5.8"},
       {:tesla, "~> 1.4"}
+      # {:tesla, "~> 1.4", only: :test, runtime: false}
     ]
   end
 
-  defp version() do
+  defp version do
     case File.dir?(".git") do
       false -> from_hex()
       true -> from_git()
     end
   end
 
-  defp from_hex() do
+  defp from_hex do
     File.read!(".version") |> String.split(":")
   end
 
-  defp from_git() do
+  defp from_git do
     # pulls version information from "nearest" git tag or sha hash-ish
     {hashish, 0} =
       System.cmd("git", ~w[describe --dirty --abbrev=7 --tags --always --first-parent])

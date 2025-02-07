@@ -1,4 +1,6 @@
 defmodule Sofa.Doc do
+  require Logger
+
   @moduledoc """
   Documentation for `Sofa.Doc`, a test-driven idiomatic Apache CouchDB client.
 
@@ -27,8 +29,6 @@ defmodule Sofa.Doc do
           type: atom
         }
 
-  alias Sofa.Doc
-
   @doc """
   Creates a new (empty) document
   """
@@ -54,6 +54,16 @@ defmodule Sofa.Doc do
   - {:ok, %Sofa.Doc{}} # doc exists and has metadata
   """
   @spec exists(Sofa.t(), String.t()) :: {:error, any()} | {:ok, %{}}
+  def exists(sofa = %Sofa{database: nil}, path) when is_binary(path) do
+    case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
+      [db, doc] ->
+        exists(%Sofa{sofa | database: db}, doc)
+
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
+
   def exists(sofa = %Sofa{database: db}, doc) when is_binary(doc) do
     case Sofa.raw(sofa, db <> "/" <> doc, :head) do
       {:error, reason} ->
@@ -78,6 +88,16 @@ defmodule Sofa.Doc do
   Check if doc exists via `HEAD /:db/:doc and returns either true or false
   """
   @spec exists?(Sofa.t(), String.t()) :: false | true
+  def exists?(sofa = %Sofa{database: nil}, path) when is_binary(path) do
+    case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
+      [db, doc] ->
+        exists?(%Sofa{sofa | database: db}, doc)
+
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
+
   def exists?(sofa = %Sofa{database: db}, doc) when is_binary(doc) do
     case Sofa.raw(sofa, db <> "/" <> doc, :head) do
       {:ok, _sofa,
@@ -104,13 +124,36 @@ defmodule Sofa.Doc do
   Converts CouchDB-native JSON-friendly map to internal %Sofa.Doc{} format
   """
   @spec from_map(map()) :: %Sofa.Doc{}
-  def from_map(m = %{id: id}) do
+  def from_map(m = %{"id" => id}) do
     # remove all keys that are defined already in the struct
-    body = Map.drop(m, Map.from_struct(%Sofa.Doc{}) |> Map.keys())
+    body =
+      Map.drop(
+        m,
+        Map.from_struct(%Sofa.Doc{}) |> Map.keys() |> Enum.map(fn x -> Atom.to_string(x) end)
+      )
+
     # grab the rest we need them
-    rev = Map.get(m, :rev, nil)
-    atts = Map.get(m, :attachments, nil)
-    type = Map.get(m, :type, nil)
+    rev = Map.get(m, "rev", nil)
+    atts = Map.get(m, "attachments", nil)
+    type = Map.get(m, "type", nil)
+    %Sofa.Doc{attachments: atts, body: body, id: id, rev: rev, type: type}
+  end
+
+  def from_map(m = %{"_id" => id}) do
+    # remove all keys that are defined already in the struct
+    drops =
+      Map.from_struct(%Sofa.Doc{}) |> Map.keys() |> Enum.map(fn x -> Atom.to_string(x) end)
+
+    body =
+      Map.drop(
+        m,
+        drops ++ ["_id", "_rev"]
+      )
+
+    # grab the rest we need them
+    rev = Map.get(m, "_rev", nil)
+    atts = Map.get(m, "attachments", nil)
+    type = Map.get(m, "type", nil)
     %Sofa.Doc{attachments: atts, body: body, id: id, rev: rev, type: type}
   end
 
@@ -126,47 +169,129 @@ defmodule Sofa.Doc do
   #   @spec new() :: {%Sofa.Doc.t()}
   #   def new(), do: new(Sofa.Doc)
 
-  #   @doc """
-  #   create doc
-  #   """
-  #   @spec create(Sofa.t(), String.t()) :: {:error, any()} | {:ok, Sofa.t(), any()}
-  #   def create(sofa = %Sofa{}, db) when is_binary(db) do
-  #     case Sofa.raw(sofa, db, :put) do
-  #       {:error, reason} ->
-  #         {:error, reason}
+  @doc """
+  create doc
+  """
+  @spec create(Sofa.t(), String.t(), map()) :: {:error, any()} | {:ok, Sofa.t(), any()}
+  def create(sofa = %Sofa{database: nil}, path, doc) when is_map(doc) do
+    case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
+      [db, id] ->
+        Logger.debug("Got DB: #{db} and ID: #{id}")
+        create(%Sofa{sofa | database: db}, id, doc)
 
-  #       {:ok, _sofa, resp} ->
-  #         {:ok, sofa,
-  #          %Sofa.Response{
-  #            body: resp.body,
-  #            url: resp.url,
-  #            query: resp.query,
-  #            method: resp.method,
-  #            headers: resp.headers,
-  #            status: resp.status
-  #          }}
-  #     end
-  #   end
+      [db] ->
+        Logger.debug("Got DB: #{db}")
+        create(%Sofa{sofa | database: db}, doc)
 
-  #   @doc """
-  #   delete doc
-  #   """
-  #   @spec delete(Sofa.t(), String.t()) :: {:error, any()} | {:ok, Sofa.t(), any()}
-  #   def delete(sofa = %Sofa{}, db) when is_binary(db) do
-  #     case Sofa.raw(sofa, db, :delete) do
-  #       {:error, reason} ->
-  #         {:error, reason}
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
 
-  #       {:ok, _sofa, resp} ->
-  #         {:ok, sofa,
-  #          %Sofa.Response{
-  #            body: resp.body,
-  #            url: resp.url,
-  #            query: resp.query,
-  #            method: resp.method,
-  #            headers: resp.headers,
-  #            status: resp.status
-  #          }}
-  #     end
-  #   end
+  def create(sofa = %Sofa{database: db}, id, doc) when is_map(doc) do
+    Logger.debug("Creating document with ID #{id}")
+
+    case Sofa.raw(sofa, db <> "/" <> id, :put, [], doc) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, from_map(resp.body)}
+    end
+  end
+
+  def create(sofa = %Sofa{database: db}, doc) when is_map(doc) do
+    case Sofa.raw(sofa, db, :post, [], doc) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, from_map(resp.body)}
+    end
+  end
+
+  @doc """
+  update doc
+  """
+  @spec update(Sofa.t(), String.t(), String.t(), Sofa.Doc.t()) ::
+          {:error, any()} | {:ok, Sofa.Doc.t()}
+  def update(sofa = %Sofa{database: nil}, db, rev, doc = %Sofa.Doc{body: body}) do
+    case Sofa.raw(sofa, db <> "/" <> doc.id, :put, [{"rev", rev}], Map.put(body, "_id", doc.id)) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, from_map(resp.body)}
+    end
+  end
+
+  @spec update(Sofa.t(), String.t(), Sofa.Doc.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
+  def update(sofa = %Sofa{database: nil}, db, doc = %Sofa.Doc{}) do
+    update(sofa, db, doc.rev, doc)
+  end
+
+  @spec update(Sofa.t(), String.t(), Sofa.Doc.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
+  def update(sofa = %Sofa{}, rev, doc = %Sofa.Doc{}) do
+    update(sofa, %Sofa.Doc{doc | rev: rev})
+  end
+
+  @spec update(Sofa.t(), Sofa.Doc.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
+  def update(sofa = %Sofa{database: db}, doc = %Sofa.Doc{body: body}) do
+    case Sofa.raw(
+           sofa,
+           db <> "/" <> doc.id,
+           :put,
+           [{"rev", doc.rev}],
+           Map.put(body, "_id", doc.id)
+         ) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, from_map(resp.body)}
+    end
+  end
+
+  @spec get(Sofa.t(), String.t()) ::
+          {:error, any()} | {:ok, Sofa.Doc.t()}
+  def get(sofa = %Sofa{database: nil}, path) when is_binary(path) do
+    case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
+      [db, id] ->
+        get(%Sofa{sofa | database: db}, id)
+
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
+
+  def get(sofa = %Sofa{database: db}, id) when is_binary(id) do
+    case Sofa.raw(sofa, db <> "/" <> id, :get) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, from_map(resp.body)}
+    end
+  end
+
+  @spec delete(Sofa.t(), String.t(), String.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
+  def delete(sofa = %Sofa{database: nil}, path, rev) when is_binary(path) do
+    case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
+      [db, id] ->
+        delete(%Sofa{sofa | database: db}, id, rev)
+
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
+
+  def delete(sofa = %Sofa{database: db}, id, rev) when is_binary(id) do
+    case Sofa.raw(sofa, db <> "/" <> id, :delete, [{"rev", rev}]) do
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, from_map(resp.body)}
+    end
+  end
 end

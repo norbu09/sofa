@@ -1,10 +1,9 @@
 {
   "couchdb": "Welcome",
-  "version": "1.2.3",
-  "git_sha": "cafefeed",
-  "uuid": "5b08a751c82f9e217e14ef11d2704c2fd",
+  "version": "3.4.2",
+  "git_sha": "6e5ad2a5c",
+  "uuid": "0b8692edcfc2c56105970e5f59fd3aa1",
   "features": [
-    "fake",
     "access-ready",
     "partitioned",
     "pluggable-storage-engines",
@@ -12,6 +11,6 @@
     "scheduler"
   ],
   "vendor": {
-    "name": "Artisanal"
+    "name": "The Apache Software Foundation"
   }
 }

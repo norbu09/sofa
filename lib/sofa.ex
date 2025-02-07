@@ -10,8 +10,7 @@ defmodule Sofa do
   iex> Sofa.init() |> Sofa.client() |> Sofa.connect!()
   %{
     "couchdb" => "Welcome",
-    "features" => ["access-ready", "partitioned", "pluggable-storage-engines",
-      "reshard", "scheduler"],
+    "features" => ["access-ready", "partitioned", "pluggable-storage-engines", "reshard", "scheduler"],
     "git_sha" => "ce596c65d",
     "uuid" => "59c032d3a6adcd5b44315137a124bf69",
     "vendor" => %{"name" => "FreeBSD"},
@@ -23,7 +22,7 @@ defmodule Sofa do
   defstruct [
     # auth specific headers such as Bearer, Basic
     :auth,
-    # re-usable tesla HTTP client
+    # re-usable req HTTP client
     :client,
     # optional database field
     :database,
@@ -43,7 +42,7 @@ defmodule Sofa do
 
   @type t :: %__MODULE__{
           auth: any,
-          client: nil | Tesla.Client.t(),
+          client: nil | Req.Request.t(),
           database: nil | binary,
           features: nil | list,
           timeout: nil | integer,
@@ -107,13 +106,13 @@ defmodule Sofa do
   def client(couch = %Sofa{uri: uri}) do
     couch_url = uri.scheme <> "://" <> uri.host <> ":#{uri.port}/"
 
-    middleware = [
-      {Tesla.Middleware.BaseUrl, couch_url},
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.BasicAuth, auth_info(uri.userinfo)}
-    ]
+    client =
+      Req.new(
+        base_url: couch_url,
+        auth: {:basic, uri.userinfo},
+        headers: [{"Content-Type", "application/json"}]
+      )
 
-    client = Tesla.client(middleware)
     %Sofa{couch | client: client}
   end
 
@@ -159,12 +158,9 @@ defmodule Sofa do
   end
 
   def connect(couch = %Sofa{}) do
-    case result = Tesla.get(couch.client, "/") do
+    case result = Req.get(couch.client, url: "/") do
       {:error, _} ->
         result
-
-      {:ok, resp = %{body: %{"error" => _error, "reason" => _reason}}} ->
-        {:error, resp}
 
       {:ok, resp} ->
         {:ok,
@@ -190,7 +186,7 @@ defmodule Sofa do
     url = sofa.uri.host <> ":" <> to_string(sofa.uri.port)
 
     case connect(sofa) do
-      {:error, :econnrefused} ->
+      {:error, %Req.TransportError{reason: :econnrefused}} ->
         raise Sofa.Error, "connection refused to " <> url
 
       {:ok, resp} ->
@@ -207,8 +203,11 @@ defmodule Sofa do
   @spec all_dbs(Sofa.t()) :: {:error, any()} | {:ok, Sofa.t(), [String.t()]}
   def all_dbs(sofa = %Sofa{}) do
     case raw(sofa, "_all_dbs") do
-      {:error, reason} -> {:error, reason}
-      {:ok, _sofa, resp} -> {:ok, resp.body}
+      {:error, reason} ->
+        {:error, reason}
+
+      {:ok, _sofa, resp} ->
+        {:ok, resp.body}
     end
   end
 
@@ -227,12 +226,13 @@ defmodule Sofa do
   Minimal wrapper around native CouchDB HTTP API, allowing an escape hatch
   for raw functionality, and as the core abstraction layer for Sofa itself.
   """
+  # FIXME: fix type specs
   @spec raw(
           Sofa.t(),
-          Tesla.Env.url(),
-          Tesla.Env.method(),
-          Tesla.Env.opts(),
-          Tesla.Env.body()
+          String.t(),
+          atom(),
+          list(),
+          map()
         ) ::
           {:error, any()} | {:ok, Sofa.t(), %Sofa.Response{}}
   def raw(
@@ -240,18 +240,20 @@ defmodule Sofa do
         path \\ "",
         method \\ :get,
         query \\ [],
-        body \\ ""
+        body \\ %{}
       ) do
     # each Tesla adapter handles "empty" options differently - some
     # expect nil, others "", and some expect the key:value to be missing
-    case Tesla.request(sofa.client, url: path, method: method, query: query, body: body) do
+    body_data = Jason.encode_to_iodata!(body)
+
+    case Req.request(sofa.client, url: path, method: method, params: query, body: body_data) do
       {:ok, resp = %{body: %{"error" => _error, "reason" => _reason}}} ->
         {:error,
          %Sofa.Response{
            body: resp.body,
-           url: resp.url,
-           query: resp.query,
-           method: resp.method,
+           url: path,
+           query: query,
+           method: method,
            headers: Sofa.Cushion.untaint_headers(resp.headers),
            status: resp.status
          }}
@@ -260,9 +262,9 @@ defmodule Sofa do
         {:ok, sofa,
          %Sofa.Response{
            body: resp.body,
-           url: resp.url,
-           query: resp.query,
-           method: resp.method,
+           url: path,
+           query: query,
+           method: method,
            headers: Sofa.Cushion.untaint_headers(resp.headers),
            status: resp.status
          }}
@@ -286,7 +288,7 @@ defmodule Sofa do
   def raw!(sofa = %Sofa{}, path \\ "", method \\ :get, query \\ [], body \\ %{}) do
     case raw(sofa, path, method, query, body) do
       {:ok, %Sofa{}, response = %Sofa.Response{}} -> response
-      {:error, reason} -> raise(Sofa.Error, "unhandled error in #{method} #{path}")
+      {:error, _reason} -> raise(Sofa.Error, "unhandled error in #{method} #{path}")
     end
   end
 end
