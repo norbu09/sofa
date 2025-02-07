@@ -291,4 +291,50 @@ defmodule Sofa do
       {:error, _reason} -> raise(Sofa.Error, "unhandled error in #{method} #{path}")
     end
   end
+
+  ##### public interface #######
+  ###
+  #
+
+  @doc """
+  The public interface to couch should be as simple as possible, something along these lines:
+
+  iex> Sofa.get(sofa, "/foo/bar")
+  iex> Sofa.get(sofa, "/foo")
+  iex> Sofa.get(sofa, db: "foo", id: "bar")
+  iex> Sofa.get(sofa, db: "foo")
+  iex> Sofa.get(sofa, db: "foo", view: "map/foo")
+  iex> Sofa.get(sofa, db: "foo", view: "map/foo", reduce: true)
+
+  ideally we also want a way to call the init function implicitly and configure it via the config system so that we get this:
+
+  iex> Sofa.get("/foo/bar")
+
+  """
+
+  def get(sofa = %Sofa{database: nil}, path) when is_binary(path) do
+    case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
+      [db, id] ->
+        Sofa.Doc.get(%Sofa{sofa | database: db}, id)
+
+      [db] ->
+        Sofa.DB.info(sofa, db)
+
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
+
+  def get(sofa = %Sofa{database: nil}, opts) when is_list(opts) do
+    case Keyword.keys(opts) do
+      [:db, :id] ->
+        Sofa.Doc.get(%Sofa{sofa | database: Keyword.get(opts, :db)}, Keyword.get(opts, :id))
+
+      [:db] ->
+        Sofa.DB.info(sofa, Keyword.get(opts, :db))
+
+      _ ->
+        {:error, :db_not_found}
+    end
+  end
 end
