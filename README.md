@@ -1,5 +1,87 @@
 ## Sofa: idiomatic Elixir module for [Apache CouchDB]
 
+I bastardised Sofa to something that i'll hopefully grow into what @dch originally intended. This is how far i am today:
+
+## Installation
+
+I have not published my version to Hex yet so please grab it from GitHub:
+
+```elixir
+def deps do
+  {:sofa, github: "norbu09/sofa"}
+end
+```
+
+Then configure it how you would configure any repo:
+
+```elixir
+# config/config.exs
+
+import Config
+
+config :my_app, MyApp.Repo,
+  base_uri: "http://localhost:5984",
+  database: "my_app",
+  username: "app_user",
+  password: "app_pass"
+```
+
+Then create a repo module with the following contents:
+
+```elixir
+# lib/my_app/repo.ex
+
+defmodule MyApp.Repo do
+  use Sofa.Repo, otp_app: :my_app
+end
+```
+
+With the setup out of the way we can now use our repo the following way:
+
+```elixir
+iex> MyApp.Repo.client() |> Sofa.DB.create("my_app")
+{:ok, %Sofa{}, %Sofa.Response{}}
+
+iex> MyApp.Repo.create_doc(%{foo: :bar})
+{:ok,
+ %Sofa.Doc{
+   attachments: nil,
+   body: %{"ok" => true},
+   id: "f005bb0e3857af478d58a502160005a5",
+   rev: "1-4c6114c65e295552ab1019e2b046b10e",
+   type: nil
+ }}
+
+iex> MyApp.Repo.create_doc("foo", %{foo: :bar})
+{:ok,
+ %Sofa.Doc{
+   attachments: nil,
+   body: %{"ok" => true},
+   id: "foo",
+   rev: "1-4c6114c65e295552ab1019e2b046b10e",
+   type: nil
+ }}
+
+MyApp.Repo.get_doc("foo")
+{:ok,
+ %Sofa.Doc{
+   attachments: nil,
+   body: %{"foo" => "bar"},
+   id: "foo",
+   rev: "1-4c6114c65e295552ab1019e2b046b10e",
+   type: nil
+ }}
+```
+
+todo:
+
+- [ ] view handling
+- [ ] migrations
+- [ ] see how we can get this into ecto or into ash (or both)
+- [ ] get back to @dch list
+
+--- this is what @dch intended ... ---
+
 Sofa is yet another Elixir CouchDB client. Its sole claim to fame is
 that it's written by two rather average developer with no delusions of
 grandeur. You should have no trouble understanding it.
