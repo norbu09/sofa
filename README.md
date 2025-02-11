@@ -1,7 +1,7 @@
 ## Sofa: idiomatic Elixir module for [Apache CouchDB]
 
 Sofa is yet another Elixir CouchDB client. Its sole claim to fame is
-that it's written by a rather average developer with no delusions of
+that it's written by two rather average developer with no delusions of
 grandeur. You should have no trouble understanding it.
 
 The intention is to provide an idiomatic Elixir client, that can play
@@ -24,8 +24,8 @@ Sofa makes no guarantees about specific HTTP modules, but should run
 with:
 
 - default Erlang `httpc` "no dependencies!"
-- https://ninenines.eu/docs/en/gun/2.0 "fast and furious"
-- https://github.com/puzza007/katipo "NIF, Schmiff"
+- <https://ninenines.eu/docs/en/gun/2.0> "fast and furious"
+- <https://github.com/puzza007/katipo> "NIF, Schmiff"
 
 The package can be installed by adding `sofa` to your list of
 dependencies in `mix.exs`:
@@ -231,7 +231,6 @@ that your PLT creation is preserved across runs.
 - the CouchDB team, who have been a part of my life for more than a
     decade. Relax.
 
-[hex]: https://hex.pm/packages/sofa
 [Apache CouchDB]: https://couchdb.org/
 [hexdocs]: https://hexdocs.pm/sofa
 [CouchDB API]: https://docs.couchdb.org/

@@ -88,8 +88,36 @@ defmodule Sofa do
   }
 
   """
+  # TODO: we want to have this in our config:
+  #
+  # config :my_app, MyApp.Sofa.RepoOne,
+  #   uri: "http://localhost:5984/db1",
+  #   name: :db1,
+  #   user: "admin",
+  #   pass: "admin"
+  #
+  # config :my_app, MyApp.Sofa.RepoTwo,
+  #   uri: "http://localhost:5984/db2",
+  #   name: :db2,
+  #   user: "admin",
+  #   pass: "admin"
+  #
+  # config :couchdb, repos: [Databases.RepoOne, Databases.RepoTwo],
+  #   default: MyApp.Sofa.RepoOne
+  #
+  @spec init() :: Sofa.t()
+  def init do
+    case Application.get_env(:couchdb, :default) do
+      nil ->
+        @default_uri
+
+      db ->
+        db.init()
+    end
+  end
+
   @spec init(uri :: String.t() | URI.t()) :: Sofa.t()
-  def init(uri \\ @default_uri) do
+  def init(uri) do
     uri = URI.parse(uri)
 
     %Sofa{
@@ -295,6 +323,7 @@ defmodule Sofa do
   ##### public interface #######
   ###
   #
+  # not sure yet if i want to use this ...
 
   @doc """
   The public interface to couch should be as simple as possible, something along these lines:
@@ -323,6 +352,11 @@ defmodule Sofa do
       _ ->
         {:error, :db_not_found}
     end
+  end
+
+  def get(sofa = %Sofa{database: db}, path) when is_binary(path) do
+    id = String.trim_leading(path, "/")
+    Sofa.Doc.get(%Sofa{sofa | database: db}, id)
   end
 
   def get(sofa = %Sofa{database: nil}, opts) when is_list(opts) do
