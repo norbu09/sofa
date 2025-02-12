@@ -109,7 +109,7 @@ defmodule Sofa do
   def init do
     case Application.get_env(:couchdb, :default) do
       nil ->
-        @default_uri
+        init(@default_uri)
 
       db ->
         db.init()
@@ -142,6 +142,11 @@ defmodule Sofa do
       )
 
     %Sofa{couch | client: client}
+  end
+
+  @spec client(Sofa.t(), String.t()) :: Sofa.t()
+  def client(sofa = %Sofa{uri: _uri}, db) do
+    client(%Sofa{sofa | database: db})
   end
 
   @doc """

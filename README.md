@@ -76,7 +76,9 @@ MyApp.Repo.get_doc("foo")
 todo:
 
 - [ ] view handling
+  - [x] basic views can queried and created
 - [ ] migrations
+  - [x] started looking into mix tasks for this. There is a stub `mix.create`
 - [ ] see how we can get this into ecto or into ash (or both)
 - [ ] get back to @dch list
 
