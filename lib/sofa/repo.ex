@@ -12,11 +12,11 @@ defmodule Sofa.Repo do
   #     otp_app: my_app
   #   end
 
-  defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
+  defmacro __using__(options) do
+    quote do
       require Logger
 
-      def client do
+      def client(opts \\ unquote(options)) do
         case Application.get_env(opts[:otp_app], __MODULE__) do
           nil ->
             Logger.error("Could not find configuration for Sofa.Repo")
@@ -25,7 +25,15 @@ defmodule Sofa.Repo do
             uri = URI.parse(conf[:base_uri])
             base_url = "#{uri.scheme}://#{uri.host}:#{uri.port}/"
             db = conf[:database] || uri.path || ""
-            auth = "#{conf[:username]}:#{conf[:password]}" || uri.userinfo
+
+            auth =
+              case conf[:username] do
+                nil ->
+                  uri.userinfo
+
+                user ->
+                  "#{user}:#{conf[:password]}" || uri.userinfo
+              end
 
             client =
               Req.new(
