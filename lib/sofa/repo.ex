@@ -16,14 +16,9 @@ defmodule Sofa.Repo do
     quote bind_quoted: [opts: opts] do
       require Logger
 
-      @conf Application.compile_env(opts[:otp_app], __MODULE__,
-              base_uri: nil,
-              database: nil,
-              username: nil,
-              password: nil
-            )
+      @conf Application.compile_env(opts[:otp_app], __MODULE__)
 
-      def client() do
+      def client do
         case @conf do
           nil ->
             Logger.error("Could not find configuration for Sofa.Repo")
