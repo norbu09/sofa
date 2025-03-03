@@ -64,6 +64,11 @@ defmodule Sofa.Repo do
         client()
         |> Sofa.Doc.create(path, doc)
       end
+
+      def update_doc(%Sofa.Doc{} = doc) do
+        client()
+        |> Sofa.Doc.update(doc)
+      end
     end
   end
 end

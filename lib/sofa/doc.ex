@@ -117,7 +117,13 @@ defmodule Sofa.Doc do
   """
   @spec to_map(%Sofa.Doc{}) :: map()
   def to_map(doc = %Sofa.Doc{}) do
-    Map.from_struct(doc)
+    new_doc =
+      doc.body
+      |> Map.put("_id", doc.id)
+      |> Map.put("_rev", doc.rev)
+      |> Map.put("type", doc.type)
+
+    if doc.attachments, do: Map.put(new_doc, "attachments", doc.attachments), else: new_doc
   end
 
   @doc """
@@ -215,8 +221,8 @@ defmodule Sofa.Doc do
   """
   @spec update(Sofa.t(), String.t(), String.t(), Sofa.Doc.t()) ::
           {:error, any()} | {:ok, Sofa.Doc.t()}
-  def update(sofa = %Sofa{database: nil}, db, rev, doc = %Sofa.Doc{body: body}) do
-    case Sofa.raw(sofa, db <> "/" <> doc.id, :put, [{"rev", rev}], Map.put(body, "_id", doc.id)) do
+  def update(sofa = %Sofa{database: nil}, db, rev, doc = %Sofa.Doc{body: _body}) do
+    case Sofa.raw(sofa, db <> "/" <> doc.id, :put, [{"rev", rev}], to_map(doc)) do
       {:error, reason} ->
         {:error, reason}
 
@@ -236,13 +242,13 @@ defmodule Sofa.Doc do
   end
 
   @spec update(Sofa.t(), Sofa.Doc.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
-  def update(sofa = %Sofa{database: db}, doc = %Sofa.Doc{body: body}) do
+  def update(sofa = %Sofa{database: db}, doc = %Sofa.Doc{body: _body}) do
     case Sofa.raw(
            sofa,
            db <> "/" <> doc.id,
            :put,
            [{"rev", doc.rev}],
-           Map.put(body, "_id", doc.id)
+           to_map(doc)
          ) do
       {:error, reason} ->
         {:error, reason}
