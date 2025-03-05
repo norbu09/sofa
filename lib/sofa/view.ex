@@ -42,6 +42,24 @@ defmodule Sofa.View do
     end
   end
 
+  def from_map(%Sofa.Response{body: body}, :include_docs) do
+    Logger.debug("Response: #{inspect(body)}")
+
+    case Enum.map(body["rows"], fn x -> %{x["key"] => Sofa.Doc.from_map(x["doc"])} end) do
+      [%{nil: val}] ->
+        %Sofa.View{
+          rows: [val]
+        }
+
+      rows ->
+        %Sofa.View{
+          rows: rows,
+          total_rows: body["total_rows"],
+          offset: body[:offset]
+        }
+    end
+  end
+
   def info(sofa = %Sofa{database: db}, raw_path) when is_binary(raw_path) do
     path =
       case String.split(raw_path, "/", parts: 2) do
@@ -76,7 +94,13 @@ defmodule Sofa.View do
 
         case call(sofa, :get, path, opts) do
           {:ok, resp} ->
-            {:ok, from_map(resp)}
+            case opts[:include_docs] do
+              true ->
+                {:ok, from_map(resp, :include_docs)}
+
+              false ->
+                {:ok, from_map(resp)}
+            end
 
           error ->
             error
