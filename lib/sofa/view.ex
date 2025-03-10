@@ -42,10 +42,11 @@ defmodule Sofa.View do
     end
   end
 
+  @spec from_map(map(), :include_docs) :: %Sofa.View{}
   def from_map(%Sofa.Response{body: body}, :include_docs) do
     Logger.debug("Response: #{inspect(body)}")
 
-    case Enum.map(body["rows"], fn x -> %{x["key"] => Sofa.Doc.from_map(x["doc"])} end) do
+    case Enum.map(body["rows"], fn x -> parse_doc_row(x) end) do
       [%{nil: val}] ->
         %Sofa.View{
           rows: [val]
@@ -60,6 +61,7 @@ defmodule Sofa.View do
     end
   end
 
+  @spec info(Sofa.t(), String.t()) :: {:error, any()} | {:ok, Sofa.t(), any()}
   def info(sofa = %Sofa{database: db}, raw_path) when is_binary(raw_path) do
     path =
       case String.split(raw_path, "/", parts: 2) do
@@ -112,6 +114,18 @@ defmodule Sofa.View do
     end
   end
 
+  def all_docs(sofa = %Sofa{database: db}, opts \\ []) do
+    path = "#{db}/_all_docs"
+
+    case call(sofa, :get, path, opts) do
+      {:ok, resp} ->
+        {:ok, from_map(resp, :include_docs)}
+
+      error ->
+        error
+    end
+  end
+
   defp call(sofa, method, path, opts) do
     case Sofa.raw(sofa, path, method, opts) do
       {:error, reason} ->
@@ -128,5 +142,13 @@ defmodule Sofa.View do
 
   defp parse_row(row) do
     row
+  end
+
+  defp parse_doc_row(%{"key" => key, "doc" => doc}) do
+    %{key => Sofa.Doc.from_map(doc)}
+  end
+
+  defp parse_doc_row(doc = %{"id" => id}) do
+    %{id => Sofa.Doc.from_map(doc)}
   end
 end
