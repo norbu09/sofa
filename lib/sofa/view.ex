@@ -96,11 +96,11 @@ defmodule Sofa.View do
 
         case call(sofa, :get, path, opts) do
           {:ok, resp} ->
-            case opts[:include_docs] do
+            case Keyword.get(opts, :include_docs, false) do
               true ->
                 {:ok, from_map(resp, :include_docs)}
 
-              false ->
+              _ ->
                 {:ok, from_map(resp)}
             end
 
@@ -144,11 +144,11 @@ defmodule Sofa.View do
     row
   end
 
-  defp parse_doc_row(%{"key" => key, "doc" => doc}) do
-    %{key => Sofa.Doc.from_map(doc)}
+  defp parse_doc_row(%{"key" => _key, "doc" => doc}) do
+    Sofa.Doc.from_map(doc)
   end
 
-  defp parse_doc_row(doc = %{"id" => id}) do
-    %{id => Sofa.Doc.from_map(doc)}
+  defp parse_doc_row(doc = %{"id" => _id}) do
+    Sofa.Doc.from_map(doc)
   end
 end

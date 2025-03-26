@@ -69,6 +69,13 @@ defmodule Sofa.Repo do
         client()
         |> Sofa.Doc.update(doc)
       end
+
+      def get_view(path) when is_binary(path), do: get_view(path, [])
+
+      def get_view(path, opts) when is_binary(path) do
+        client()
+        |> Sofa.View.get(path, opts)
+      end
     end
   end
 end
