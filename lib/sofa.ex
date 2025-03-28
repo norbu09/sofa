@@ -279,7 +279,7 @@ defmodule Sofa do
     # expect nil, others "", and some expect the key:value to be missing
     body_data = Jason.encode_to_iodata!(body)
 
-    query_params = query |> Enum.map(fn {k, v} -> {k, maybe_to_string(v)} end)
+    query_params = query |> Enum.map(fn {k, v} -> maybe_to_string(k, v) end)
 
     case Req.request(sofa.client,
            url: path,
@@ -384,7 +384,8 @@ defmodule Sofa do
     end
   end
 
-  defp maybe_to_string(thing) when is_atom(thing), do: thing
-  defp maybe_to_string(thing) when is_binary(thing), do: "\"#{thing}\""
-  defp maybe_to_string(thing), do: thing
+  defp maybe_to_string("rev", thing), do: {"rev", thing}
+  defp maybe_to_string(k, thing) when is_atom(thing), do: {k, thing}
+  defp maybe_to_string(k, thing) when is_binary(thing), do: {k, "\"#{thing}\""}
+  defp maybe_to_string(k, thing), do: {k, thing}
 end
