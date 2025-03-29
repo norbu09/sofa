@@ -281,7 +281,7 @@ defmodule Sofa.Doc do
   end
 
   @spec delete(Sofa.t(), String.t(), String.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
-  def delete(_sofa = %Sofa{database: nil}, nil, _rev) do
+  def delete(_sofa, nil, _rev) do
     {:error, :doc_id_invalid}
   end
 
