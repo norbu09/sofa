@@ -76,6 +76,16 @@ defmodule Sofa.Repo do
         client()
         |> Sofa.View.get(path, opts)
       end
+
+      def delete_doc(%Sofa.Doc{} = doc) do
+        client()
+        |> Sofa.Doc.delete(doc.id, doc.rev)
+      end
+
+      def delete_doc(id, rev) do
+        client()
+        |> Sofa.Doc.delete(id, rev)
+      end
     end
   end
 end
