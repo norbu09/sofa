@@ -281,6 +281,10 @@ defmodule Sofa.Doc do
   end
 
   @spec delete(Sofa.t(), String.t(), String.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
+  def delete(_sofa = %Sofa{database: nil}, nil, _rev) do
+    {:error, :doc_id_invalid}
+  end
+
   def delete(sofa = %Sofa{database: nil}, path, rev) when is_binary(path) do
     case String.trim_leading(path, "/") |> String.split("/", parts: 2) do
       [db, id] ->
