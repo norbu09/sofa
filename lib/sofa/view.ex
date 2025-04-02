@@ -89,6 +89,7 @@ defmodule Sofa.View do
     end
   end
 
+  @spec get(Sofa.t(), String.t(), Keyword.t()) :: {:error, any()} | {:ok, Sofa.View.t()}
   def get(sofa = %Sofa{database: db}, raw_path, opts \\ []) when is_binary(raw_path) do
     case String.split(raw_path, "/", parts: 2) do
       [ddoc, view] ->
@@ -114,6 +115,7 @@ defmodule Sofa.View do
     end
   end
 
+  @spec all_docs(Sofa.t(), Keyword.t()) :: {:error, any()} | {:ok, Sofa.View.t()}
   def all_docs(sofa = %Sofa{database: db}, opts \\ []) do
     path = "#{db}/_all_docs"
 
