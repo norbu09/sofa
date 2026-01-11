@@ -309,7 +309,7 @@ defmodule Sofa.Doc do
   Delete a document by database, id, and rev (4-parameter version)
   """
   @spec delete(Sofa.t(), String.t(), String.t(), String.t()) :: {:error, any()} | {:ok, Sofa.Doc.t()}
-  def delete(sofa, database, id, rev) when is_binary(database) and is_binary(id) and is_binary(rev) do
+  def delete(%Sofa{} = sofa, database, id, rev) when is_binary(database) and is_binary(id) and is_binary(rev) do
     delete(%Sofa{sofa | database: database}, id, rev)
   end
 end
