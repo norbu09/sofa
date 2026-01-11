@@ -35,7 +35,8 @@ defmodule Sofa.MixProject do
       {:credo, ">= 1.3.0", only: [:dev, :test], runtime: false},
       {:dialyxir, ">= 1.1.0", only: :dev, runtime: false},
       {:jason, "~> 1.4"},
-      {:req, ">= 0.5.8"}
+      {:req, ">= 0.5.8"},
+      {:telemetry, "~> 1.0"}
     ]
   end
 
