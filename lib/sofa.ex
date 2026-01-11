@@ -383,6 +383,28 @@ defmodule Sofa do
     end
   end
 
+  @doc """
+  Get request with path and query parameters
+  """
+  def get(sofa = %Sofa{}, path, opts) when is_binary(path) and is_list(opts) do
+    raw(sofa, path, :get, opts)
+  end
+
+  @doc """
+  Posts data to a path.
+
+  ## Examples
+
+      Sofa.post(sofa, "/_replicate", %{source: "db1", target: "db2"})
+  """
+  @spec post(Sofa.t(), String.t(), map()) :: {:ok, Sofa.Response.t()} | {:error, term()}
+  def post(sofa = %Sofa{}, path, data) when is_map(data) do
+    case raw(sofa, path, :post, [], data) do
+      {:ok, _sofa, response} -> {:ok, response}
+      {:error, response} -> {:error, response}
+    end
+  end
+
   defp maybe_to_string("rev", thing), do: {"rev", thing}
   defp maybe_to_string(k, thing) when is_atom(thing), do: {k, thing}
   defp maybe_to_string(k, thing) when is_binary(thing), do: {k, "\"#{thing}\""}

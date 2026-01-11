@@ -196,7 +196,8 @@ defmodule Sofa.Replication do
   """
   @spec get_doc(Sofa.t(), replication_id()) :: {:ok, map()} | {:error, term()}
   def get_doc(conn, replication_id) do
-    Sofa.Doc.get(conn, "_replicator", replication_id)
+    path = "_replicator/#{replication_id}"
+    Sofa.Doc.get(conn, path)
   end
 
   @doc """
@@ -282,13 +283,13 @@ defmodule Sofa.Replication do
   @spec jobs(Sofa.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def jobs(conn, opts \\ []) do
     case Sofa.get(conn, "/_scheduler/jobs", opts) do
-      {:ok, %Sofa.Response{status: 200, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: 200, body: body}} ->
         {:ok, body}
 
-      {:ok, %Sofa.Response{status: status, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: status, body: body}} ->
         {:error, Error.from_response(status, body)}
 
-      error ->
+      {:error, _} = error ->
         error
     end
   end
@@ -305,13 +306,13 @@ defmodule Sofa.Replication do
   @spec docs(Sofa.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def docs(conn, opts \\ []) do
     case Sofa.get(conn, "/_scheduler/docs", opts) do
-      {:ok, %Sofa.Response{status: 200, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: 200, body: body}} ->
         {:ok, body}
 
-      {:ok, %Sofa.Response{status: status, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: status, body: body}} ->
         {:error, Error.from_response(status, body)}
 
-      error ->
+      {:error, _} = error ->
         error
     end
   end
@@ -326,13 +327,13 @@ defmodule Sofa.Replication do
   @spec docs(Sofa.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def docs(conn, database, opts) do
     case Sofa.get(conn, "/_scheduler/docs/#{database}", opts) do
-      {:ok, %Sofa.Response{status: 200, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: 200, body: body}} ->
         {:ok, body}
 
-      {:ok, %Sofa.Response{status: status, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: status, body: body}} ->
         {:error, Error.from_response(status, body)}
 
-      error ->
+      {:error, _} = error ->
         error
     end
   end
@@ -346,14 +347,14 @@ defmodule Sofa.Replication do
   """
   @spec doc_info(Sofa.t(), String.t(), replication_id()) :: {:ok, map()} | {:error, term()}
   def doc_info(conn, database, replication_id) do
-    case Sofa.get(conn, "/_scheduler/docs/#{database}/#{replication_id}") do
-      {:ok, %Sofa.Response{status: 200, body: body}} ->
+    case Sofa.get(conn, "/_scheduler/docs/#{database}/#{replication_id}", []) do
+      {:ok, _sofa, %Sofa.Response{status: 200, body: body}} ->
         {:ok, body}
 
-      {:ok, %Sofa.Response{status: status, body: body}} ->
+      {:ok, _sofa, %Sofa.Response{status: status, body: body}} ->
         {:error, Error.from_response(status, body)}
 
-      error ->
+      {:error, _} = error ->
         error
     end
   end

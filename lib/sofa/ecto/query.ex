@@ -68,7 +68,7 @@ defmodule Sofa.Ecto.Query do
     quote do
       selector = unquote(translate_where(binding, expr))
 
-      %{unquote(query) | where: merge_selectors(unquote(query).where, selector)}
+      %{unquote(query) | where: Sofa.Ecto.Query.merge_selectors(unquote(query).where, selector)}
     end
   end
 
@@ -258,10 +258,11 @@ defmodule Sofa.Ecto.Query do
     end)
   end
 
-  defp merge_selectors(nil, selector), do: selector
-  defp merge_selectors(selector, nil), do: selector
+  @doc false
+  def merge_selectors(nil, selector), do: selector
+  def merge_selectors(selector, nil), do: selector
 
-  defp merge_selectors(s1, s2) do
+  def merge_selectors(s1, s2) do
     %{"$and" => [s1, s2]}
   end
 

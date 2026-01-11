@@ -309,14 +309,14 @@ defmodule Sofa.Ecto.Changeset do
     {:error, %{changeset | action: action}}
   end
 
-  def apply_action(%__MODULE__{valid?: true, data: data, changes: changes} = changeset, _action) do
+  def apply_action(%__MODULE__{valid?: true, data: data, changes: changes}, _action) do
     struct = struct(data, changes)
     {:ok, struct}
   end
 
   # Private Functions
 
-  defp add_error(%__MODULE__{} = changeset, field, message, opts \\ []) do
+  defp add_error(%__MODULE__{} = changeset, field, message, opts) do
     error = {field, {message, opts}}
     add_errors(changeset, [error])
   end

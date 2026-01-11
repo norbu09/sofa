@@ -68,8 +68,12 @@ defmodule Sofa.Partitioned do
   """
   @spec create(Sofa.t(), String.t(), keyword()) :: {:ok, map()} | {:error, term()}
   def create(conn, database, opts \\ []) do
-    opts = Keyword.put(opts, :partitioned, true)
-    Sofa.DB.create(conn, database, opts)
+    query_params = [{:partitioned, true} | opts]
+
+    case Sofa.raw(conn, database, :put, query_params) do
+      {:ok, _sofa, resp} -> {:ok, resp.body}
+      {:error, resp} -> {:error, Error.from_response(resp.status, resp.body)}
+    end
   end
 
   @doc """
@@ -82,14 +86,12 @@ defmodule Sofa.Partitioned do
   @spec partitioned?(Sofa.t(), String.t()) :: {:ok, boolean()} | {:error, term()}
   def partitioned?(conn, database) do
     case Sofa.DB.info(conn, database) do
-      {:ok, %{props: %{partitioned: partitioned}}} ->
+      {:ok, _sofa, %Sofa.Response{body: body}} ->
+        # Check if the props field indicates it's partitioned
+        partitioned = get_in(body, ["props", "partitioned"]) || Map.get(body, "partitioned", false)
         {:ok, partitioned}
 
-      {:ok, info} ->
-        # Check alternate location for partitioned flag
-        {:ok, Map.get(info, "partitioned", false)}
-
-      error ->
+      {:error, _} = error ->
         error
     end
   end
@@ -136,9 +138,10 @@ defmodule Sofa.Partitioned do
   """
   @spec put(Sofa.t(), String.t(), partition(), doc_id(), map(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def put(conn, database, partition, id, doc, opts \\ []) do
+  def put(conn, database, partition, id, doc, _opts \\ []) do
     partitioned_id = build_id(partition, id)
-    Sofa.Doc.create(conn, database, Map.put(doc, "_id", partitioned_id), opts)
+    path = "#{database}/#{partitioned_id}"
+    Sofa.Doc.create(conn, path, Map.put(doc, "_id", partitioned_id))
   end
 
   @doc """
@@ -150,9 +153,10 @@ defmodule Sofa.Partitioned do
   """
   @spec get(Sofa.t(), String.t(), partition(), doc_id(), keyword()) ::
           {:ok, map()} | {:error, term()}
-  def get(conn, database, partition, id, opts \\ []) do
+  def get(conn, database, partition, id, _opts \\ []) do
     partitioned_id = build_id(partition, id)
-    Sofa.Doc.get(conn, database, partitioned_id, opts)
+    path = "#{database}/#{partitioned_id}"
+    Sofa.Doc.get(conn, path)
   end
 
   @doc """
@@ -287,6 +291,6 @@ defmodule Sofa.Partitioned do
   @spec info(Sofa.t(), String.t(), partition()) :: {:ok, map()} | {:error, term()}
   def info(conn, database, partition) do
     path = "/#{database}/_partition/#{partition}"
-    Sofa.get(conn, path)
+    Sofa.get(conn, path, [])
   end
 end

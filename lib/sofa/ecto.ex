@@ -67,7 +67,7 @@ defmodule Sofa.Ecto do
       {:ok, count} = Sofa.Ecto.count(conn, query)
   """
 
-  alias Sofa.Ecto.{Schema, Changeset, Query}
+  alias Sofa.Ecto.{Changeset, Query}
 
   @type conn :: Sofa.t()
   @type schema :: struct()

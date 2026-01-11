@@ -197,8 +197,9 @@ defmodule Sofa.Ash do
   @spec get(Sofa.t(), module(), String.t()) :: {:ok, struct()} | {:error, term()}
   def get(conn, resource, id) do
     database = database_for(resource)
+    path = "#{database}/#{id}"
 
-    case Sofa.Doc.get(conn, database, id) do
+    case Sofa.Doc.get(conn, path) do
       {:ok, doc} ->
         {:ok, struct(resource, atomize_keys(doc))}
 

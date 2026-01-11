@@ -441,6 +441,31 @@ defmodule Sofa.Mango do
     end
   end
 
+  @doc """
+  Execute a Mango query with optional query parameters (4-parameter version).
+
+  This is a convenience wrapper around `find/3` that accepts a selector map
+  and options separately, then combines them into a single query.
+
+  ## Examples
+
+      selector = %{"type" => "user", "age" => %{"$gt" => 21}}
+      opts = [limit: 10, sort: [%{"name" => "asc"}]]
+      {:ok, result} = Sofa.Mango.query(sofa, "users", selector, opts)
+
+  """
+  @spec query(Req.Request.t(), String.t(), map(), keyword()) ::
+          {:ok, find_result()} | {:error, Sofa.Error.t()}
+  def query(sofa, database, selector, opts \\ []) do
+    query_map =
+      opts
+      |> Enum.into(%{})
+      |> Map.put("selector", selector)
+      |> convert_keys_to_strings()
+
+    find(sofa, database, query_map)
+  end
+
   ## Helper Functions
 
   defp sanitize_query(query) do
@@ -448,4 +473,19 @@ defmodule Sofa.Mango do
     Map.drop(query, ["fields", "selector"])
     |> Map.put("selector_keys", query["selector"] |> Map.keys())
   end
+
+  defp convert_keys_to_strings(map) when is_map(map) do
+    map
+    |> Enum.map(fn
+      {k, v} when is_atom(k) -> {Atom.to_string(k), convert_keys_to_strings(v)}
+      {k, v} -> {k, convert_keys_to_strings(v)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp convert_keys_to_strings(list) when is_list(list) do
+    Enum.map(list, &convert_keys_to_strings/1)
+  end
+
+  defp convert_keys_to_strings(value), do: value
 end

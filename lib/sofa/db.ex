@@ -141,4 +141,13 @@ defmodule Sofa.DB do
         raise Sofa.Error, "unable to open database #{db}"
     end
   end
+
+  @doc """
+  Get all documents from a database with optional query parameters.
+  Delegates to Sofa.View.all_docs/3 for view-based queries.
+  """
+  @spec all_docs(Sofa.t(), String.t(), keyword()) :: {:error, any()} | {:ok, Sofa.t(), any()}
+  def all_docs(sofa, database, opts \\ []) do
+    Sofa.View.all_docs(%Sofa{sofa | database: database}, opts)
+  end
 end

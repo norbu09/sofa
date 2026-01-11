@@ -267,12 +267,6 @@ defmodule Sofa.Changes do
             {:incomplete, new_buffer} ->
               # Need more data
               {[], {:ok, body, new_buffer}}
-
-            :done ->
-              {:halt, {:ok, body, buffer}}
-
-            {:error, _reason} = error ->
-              {[error], {:done, nil}}
           end
 
         {:error, _error} = err ->
