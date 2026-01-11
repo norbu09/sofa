@@ -127,7 +127,7 @@ defmodule Sofa do
   end
 
   @doc """
-  Builds Telsa runtime client, with appropriate middleware header credentials,
+  Builds Req runtime client, with appropriate authentication credentials,
   from supplied %Sofa{} struct.
   """
   @spec client(Sofa.t()) :: Sofa.t()
@@ -151,7 +151,7 @@ defmodule Sofa do
 
   @doc """
   Returns user & password credentials extracted from a typical %URI{} userinfo
-  field, as a Tesla-compatible authorization header. Currently only supports
+  field, as a Req-compatible authorization header. Currently only supports
   BasicAuth user:password combination.
   ## Examples
 
@@ -275,8 +275,7 @@ defmodule Sofa do
         query \\ [],
         body \\ %{}
       ) do
-    # each Tesla adapter handles "empty" options differently - some
-    # expect nil, others "", and some expect the key:value to be missing
+    # Encode body to JSON format for CouchDB
     body_data = Jason.encode_to_iodata!(body)
 
     query_params = query |> Enum.map(fn {k, v} -> maybe_to_string(k, v) end)
@@ -320,10 +319,10 @@ defmodule Sofa do
   """
   @spec raw!(
           Sofa.t(),
-          Tesla.Env.url(),
-          Tesla.Env.method(),
-          Tesla.Env.opts(),
-          Tesla.Env.body()
+          String.t(),
+          atom(),
+          list(),
+          map()
         ) :: %Sofa.Response{}
   def raw!(sofa = %Sofa{}, path \\ "", method \\ :get, query \\ [], body \\ %{}) do
     case raw(sofa, path, method, query, body) do

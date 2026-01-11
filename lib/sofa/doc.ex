@@ -38,12 +38,12 @@ defmodule Sofa.Doc do
     %Sofa.Doc{id: id, body: %{}}
   end
 
-  def new(%{id: id}) when is_binary(id) do
-    %Sofa.Doc{id: id, body: %{}}
-  end
-
   def new(%{id: id, body: body}) when is_binary(id) and is_map(body) do
     %Sofa.Doc{id: id, body: body}
+  end
+
+  def new(%{id: id}) when is_binary(id) do
+    %Sofa.Doc{id: id, body: %{}}
   end
 
   @doc """

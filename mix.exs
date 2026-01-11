@@ -34,9 +34,8 @@ defmodule Sofa.MixProject do
       {:idna, ">= 6.1.0", optional: true},
       {:credo, ">= 1.3.0", only: [:dev, :test], runtime: false},
       {:dialyxir, ">= 1.1.0", only: :dev, runtime: false},
-      {:req, ">= 0.5.8"},
-      {:tesla, "~> 1.4"}
-      # {:tesla, "~> 1.4", only: :test, runtime: false}
+      {:jason, "~> 1.4"},
+      {:req, ">= 0.5.8"}
     ]
   end
 

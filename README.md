@@ -97,19 +97,9 @@ distinctly non-JSON things.
 
 ## Installation
 
-It is recommended to use a `Tesla.Adapter`. While in principle these are
-all equivalent, in practice, their patterns for handling query
-parameters, headers, empty HTTP bodies, IPv6, and generally dealing with
-`nil`, `true`, `false` and so forth mean that they are not created
-equal. This library should work, in most cases transparently, and if
-not, we welcome tests and converters to address any shortcomings.
-
-Sofa makes no guarantees about specific HTTP modules, but should run
-with:
-
-- default Erlang `httpc` "no dependencies!"
-- <https://ninenines.eu/docs/en/gun/2.0> "fast and furious"
-- <https://github.com/puzza007/katipo> "NIF, Schmiff"
+Sofa uses the modern `Req` HTTP client library, which provides a simple and
+powerful interface for HTTP requests. Req handles connection pooling,
+automatic retries, and various adapters transparently.
 
 The package can be installed by adding `sofa` to your list of
 dependencies in `mix.exs`:
@@ -117,22 +107,12 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:gun, "~> 2.0.0-rc.1", override: true, optional: true},
     {:sofa, "~> 0.1.0"}
   ]
 end
 ```
 
-```elixir
-# config/config.exs
-import Config
-
-if config_env() == :test do
-  config :tesla, adapter: Tesla.Mock
-else
-  config :tesla, adapter: Tesla.Adapter.Gun
-end
-```
+No additional HTTP adapter configuration is required - Req handles this automatically.
 
 ## Docs, Functionality and Road Map
 
@@ -167,7 +147,6 @@ API transparently.
 - [ ] transparent Struct API
 - [ ] view:     `Sofa.View.*`
 - [ ] changes:  `Sofa.Changes.*`
-- [ ] katipo Tesla Adapter
 - [ ] timeouts for requests and inactivity
 - [ ] bearer token authorisation
 - [ ] runtime tracing filterable by method & URL
@@ -186,10 +165,9 @@ tables, or `persistent_term` for faster access.
 your credentials are sufficient, and to retrieve feature flags and
 vendor settings.
 
-> Exactly how you use this, is dependent on your `Tesla.Adapter` and
-> supervision trees. Make sure that you're not opening a new TCP
-> connection for every call to the database, and then leave them
-> dangling until your app or the server runs of of connections!
+> Make sure you're reusing the Sofa client struct to take advantage of
+> Req's connection pooling. Avoid creating a new client for every request
+> to prevent exhausting connections.
 
 The `Sofa.DB.open!/2` call also does similar checks, ensuring you have
 at least permissions to access the database, in some form. There is
@@ -202,12 +180,7 @@ iex> sofa = Sofa.init("http://admin:passwd@localhost:5984/")
         |> Sofa.client()
         |> Sofa.connect!()
     #Sofa<
-    client: %Tesla.Client{
-        adapter: nil,
-        fun: nil,
-        post: [],
-        pre: [{Tesla.Middleware.BaseUrl, ...}, {...}, ...]
-    },
+    client: %Req.Request{...},
     features: ["access-ready", "partitioned", "pluggable-storage-engines",
     "reshard", "scheduler"],
     timeout: nil,
@@ -224,7 +197,7 @@ iex> sofa = Sofa.init("http://admin:passwd@localhost:5984/")
 # re-use the same struct, and confirm we can access a specific database
 iex> db = Sofa.DB.open!("mydb")
     #Sofa<
-    client: %Tesla.Client{ ... },
+    client: %Req.Request{...},
     database: "mydb",
     ...
     version: "3.2.0"
@@ -271,7 +244,7 @@ iex> db = Sofa.init("http://admin:passwd@localhost:5984/")
         |> Sofa.raw("/_membership")
 {:ok,
  #Sofa<
-   client: %Tesla.Client{...},
+   client: %Req.Request{...},
    database: nil,
    features: ["access-ready",... "reshard", "scheduler"],
    timeout: nil,

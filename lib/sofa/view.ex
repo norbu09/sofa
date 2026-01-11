@@ -37,7 +37,7 @@ defmodule Sofa.View do
         %Sofa.View{
           rows: rows,
           total_rows: body["total_rows"],
-          offset: body[:offset]
+          offset: body["offset"]
         }
     end
   end
@@ -56,7 +56,7 @@ defmodule Sofa.View do
         %Sofa.View{
           rows: rows,
           total_rows: body["total_rows"],
-          offset: body[:offset]
+          offset: body["offset"]
         }
     end
   end

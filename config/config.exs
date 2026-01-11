@@ -1,7 +1,4 @@
 import Config
 
-if config_env() == :test do
-  config :tesla, adapter: Tesla.Mock
-else
-  config :tesla, adapter: Tesla.Adapter.Gun
-end
+# Req configuration
+# Req handles HTTP adapters automatically, no additional configuration needed

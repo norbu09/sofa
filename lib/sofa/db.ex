@@ -13,7 +13,7 @@ defmodule Sofa.DB do
   iex> Sofa.DB.create(sofa, "testy")
       {:ok,
       #Sofa<
-        client: %Tesla.Client{},
+        client: %Req.Request{},
         database: "testy7",
         uri: %URI{},
         ...
@@ -38,7 +38,7 @@ defmodule Sofa.DB do
   iex> Sofa.DB.open!(sofa, "testy")
     #Sofa<
       database: "testy",
-      client: %Tesla.Client{},
+      client: %Req.Request{},
     ...>
 
   """
